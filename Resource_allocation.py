@@ -53,7 +53,7 @@ def DrawG(G,filename):
 #  ------- Main -------
 
 # Test graph ()
-label1 = "Test02_Graph_1"
+label1 = "Resource_allocation_Graph_1"
 G=nx.Graph()
 G.add_node("R1", pos=(1,2))
 G.add_node("R2", pos=(2,2))
@@ -70,7 +70,9 @@ G.add_edges_from([("R1","A1"),("R1","A2"),
                   ("R3","A1"),
                   ("R4","A2"),("R4","A4"),("R4","A5"),
                   ("R5","A3"),("R5","A5")])
-DrawG(G, (label1 + "_Original"))
+#DrawG(G, (label1 + "_Original"))
+# Print the original graph
+mg.DrawG(G, (label1 + ": Original Graph"))
 
 # ------- Create the QUBO -------
 
@@ -100,7 +102,7 @@ for x in G.nodes():
 
 # ------- Constraint 2: Each resource has at most 1 activity assigned -------
 for x in G.nodes():
-    if x.startswith('R'):        # The node is an Activity
+    if x.startswith('R'):        # The node is a Resource
         edgeList = []
         for (u,v) in G.edges():
             if (u==x):
@@ -141,14 +143,16 @@ print (response.record.sample[0])
 print ("Sample.first:")
 print (response.first)
 
- # Usiamo first?
-# TODO Creare dizionario edgeDict che contiene gli edge attivi
-edgeDict = defaultdict(int)
-#print(sample)
-for (e,v) in response.first:
-    if v==1:
-        
 
+# Create a Dict with active edges
+edgeDict = defaultdict(int)
+firstSample = response.first.sample
+for e in firstSample:
+    if firstSample[e]==1:
+        edgeDict[e]=1
+        print("---", e)
+print ("Edge Dictionary")
+print(edgeDict)
 
 # Select the color for each node
 def edgeColor(u,v):
@@ -158,6 +162,5 @@ def edgeColor(u,v):
     else:                                    return 'black'
 edge_color = [edgeColor(u,v) for (u,v) in G.edges]
 
-# TODO Modificare funzione di stampa per gestire colore nodi e archi (settarli come attributi di nodi e archi?)
-
-
+# Print the final graph
+mg.DrawG(G, (label1 + ": Final Graph"),'#1f78b4', edge_color)
