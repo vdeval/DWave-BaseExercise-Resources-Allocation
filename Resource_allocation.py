@@ -37,6 +37,9 @@ from collections import defaultdict
 from dwave.system import DWaveSampler, EmbeddingComposite
 import dwave_networkx as dnx
 
+# Custom Library for Graph Drawing
+import MyGraph as mg
+
 # ------- Code section -------
 
 #  ------- Print a graph -------
