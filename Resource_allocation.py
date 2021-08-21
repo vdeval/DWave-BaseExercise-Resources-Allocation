@@ -11,7 +11,7 @@
 #         2 - Each resource has at most 1 activity assigned
 #
 # Implementation principles:
-# 1 - Convert the  graph in an "adjacency matrix":
+# 1 - Convert the  graph in a subset of the "adjacency matrix":
 #     a - Each row represent a resource.
 #     b - Each column represent an activity.
 #     c - A cell in the matrix has value 1 if the resource can execute the activity, 0 otherwise.
@@ -41,14 +41,6 @@ import dwave_networkx as dnx
 import MyGraph as mg
 
 # ------- Code section -------
-
-#  ------- Print a graph -------
-def DrawG(G,filename):
-    node_pos = nx.get_node_attributes(G,'pos')
-    nx.draw(G,node_size=200, pos=node_pos, edgelist=list(G.edges), nodelist=list(G.nodes), with_labels = True)
-    plt.savefig(filename, facecolor='white', dpi=100)
-    plt.clf()
-
 
 #  ------- Main -------
 
@@ -80,6 +72,7 @@ mg.DrawG(G, (label1 + ": Original Graph"))
 Q = defaultdict(int)
 
 # ------- Constraint 1: All the activities are assigned to exactly one resource -------
+print("Encoding constraint 1")
 for x in G.nodes():
     if x.startswith('A'):        # The node is an Activity
         edgeList = []
@@ -89,35 +82,40 @@ for x in G.nodes():
             elif (v==x):
                 edgeList.append(x+u)
         # Now edgeList contains the list of edges exiting from the activity
-        # print(x, " --> ", edgeList)
-        # Set linear weight -1 to each element 
+        print("Edgelist for Activity " + x)
+        # Set linear weight -1 to each element
+        print("    Setting linear weight -1 for:")
         for e in edgeList:
             Q[(e,e)] += -1
-            # print("----------(", e, ",", e,")")
+            print("        (", e, ",", e,")")
         # Set quadratic weigth + 2 to each pair
+        print("    Setting quadratic weigth + 2 for:")
         for i in range(len(edgeList)):
             for j in range ((i+1), len(edgeList)):
                 Q[(edgeList[i],edgeList[j])] += 2
-                # print("----------(", edgeList[i], ",", edgeList[j],")")
+                print("        (", edgeList[i], ",", edgeList[j],")")
 
 # ------- Constraint 2: Each resource has at most 1 activity assigned -------
+print("Encoding constraint 2")
 for x in G.nodes():
     if x.startswith('R'):        # The node is a Resource
         edgeList = []
         for (u,v) in G.edges():
             if (u==x):
-                edgeList.append(v+u)
-            elif (v==x):
                 edgeList.append(v+x)
+            elif (v==x):
+                edgeList.append(u+x)
         # Now edgeList contains the list of edges exiting from the resource
-        # print(x, " --> ", edgeList)
+        print("Edgelist for Resource " + x)
         # Set quadratic weigth + 1 to each pair
+        print("    Setting quadratic weigth + 1 for:")
         for i in range(len(edgeList)):
             for j in range ((i+1), len(edgeList)):
                 Q[(edgeList[i],edgeList[j])] += 1
-                # print("----------(", edgeList[i], ",", edgeList[j],")")
+                print("        (", edgeList[i], ",", edgeList[j],")")
         
-# print(Q)
+print("Final QUBO:")
+print(Q)
 
 # ------- Run our QUBO on the QPU -------
 
@@ -128,12 +126,9 @@ response = sampler.sample_qubo(Q,
                                num_reads=100,
                                label=label1)
 
+print ("Response:")
 print(response)
 
-
-# ------- Update the graph and print it-------
-
-# Select first response and extract active edges
 print ("Variables:")
 print (response.variables)
 
@@ -143,15 +138,18 @@ print (response.record.sample[0])
 print ("Sample.first:")
 print (response.first)
 
+# ------- Update the graph and print it-------
+
+# Select first response and extract active edges
+firstSample = response.first.sample
 
 # Create a Dict with active edges
 edgeDict = defaultdict(int)
-firstSample = response.first.sample
 for e in firstSample:
     if firstSample[e]==1:
         edgeDict[e]=1
         print("---", e)
-print ("Edge Dictionary")
+print ("Dictionary of Active Edges:")
 print(edgeDict)
 
 # Select the color for each node
